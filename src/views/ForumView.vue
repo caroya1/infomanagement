@@ -90,8 +90,8 @@ import { ref, reactive, onMounted } from 'vue'
 import Navbar from '../components/Navbar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { forumApi } from '../mock/forumData.js'
-import { favoriteApi } from '../mock/favoriteData.js' // 引入新的 mock 文件
+import { forumApi } from '../api/forum.js'
+import { favoriteApi } from '../api/common.js'
 import { Star, StarFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -264,15 +264,10 @@ const handleCurrentChange = (newPage) => {
   currentPage.value = newPage
 }
 
-// 检查帖子是否已收藏
-const isFavorite = (postId) => {
-  return favoriteApi.isFavorite(postId)
-}
-
 // 切换收藏状态
 const toggleFavorite = async (post) => {
   // 立即更新UI状态
-  const isCurrentlyFavorite = isFavorite(post.id);
+  const isCurrentlyFavorite = await favoriteApi.isFavorite(post.id);
   
   // 添加动画状态
   post.isAnimating = true;
@@ -280,11 +275,11 @@ const toggleFavorite = async (post) => {
   try {
     if (isCurrentlyFavorite) {
       // 取消收藏
-      favoriteApi.removeFavorite(post.id);
+      await favoriteApi.removeFavorite(post.id);
       ElMessage.success('已取消收藏');
     } else {
       // 添加收藏
-      favoriteApi.addFavorite(post);
+      await favoriteApi.addFavorite(post.id, 'forum');
       ElMessage.success('已添加到收藏');
     }
     
@@ -300,6 +295,16 @@ const toggleFavorite = async (post) => {
     post.isAnimating = false;
   }
 };
+
+// 检查帖子是否已收藏
+const isFavorite = async (postId) => {
+  try {
+    return await favoriteApi.isFavorite(postId);
+  } catch (error) {
+    console.error('检查收藏状态失败:', error);
+    return false;
+  }
+}
 
 onMounted(() => {
   fetchPosts()

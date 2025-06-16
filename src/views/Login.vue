@@ -25,7 +25,7 @@
 <script setup>
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { login } from '../mock/loginMock';
+import { login } from '../api/auth.js';
 import { useRouter } from 'vue-router';
 
 // 表单数据

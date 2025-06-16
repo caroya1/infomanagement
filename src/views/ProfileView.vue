@@ -176,12 +176,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import Navbar from '../components/Navbar.vue';
-import { useRouter } from 'vue-router';
-import { getUserInfo } from '../mock/loginMock';
-import { ElMessage } from 'element-plus';
-import { favoriteApi } from '../mock/favoriteData.js'; // 引入收藏API
+import { ref, onMounted, computed } from 'vue'
+import Navbar from '../components/Navbar.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUserInfo, logout } from '../api/auth.js';
+import { favoriteApi } from '../api/common.js';
+import { useRouter } from 'vue-router'
 
 const router = useRouter();
 const activeTab = ref('info');

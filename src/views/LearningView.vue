@@ -52,9 +52,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import Navbar from '../components/Navbar.vue'
-import { learningApi } from '../mock/learningData.js'
-import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { learningApi } from '../api/learning.js'
+import { reservationApi } from '../api/common.js'
 
 const router = useRouter()
 const searchText = ref('')
@@ -108,6 +109,28 @@ const goToActivityDetail = async (activity) => {
     router.push(`/learning/detail/${activity.id}`)
   }
 }
+
+// 预约活动
+const reserveActivity = async (activity) => {
+  try {
+    await reservationApi.addReservation(activity.id);
+    activity.reservedCount++;
+    ElMessage.success('预约成功！');
+  } catch (error) {
+    console.error('预约失败:', error);
+    ElMessage.error('预约失败，请重试');
+  }
+};
+
+// 检查是否已预约
+const isReserved = async (activityId) => {
+  try {
+    return await reservationApi.isReserved(activityId);
+  } catch (error) {
+    console.error('检查预约状态失败:', error);
+    return false;
+  }
+};
 
 // 初始化加载活动数据
 const fetchActivities = async () => {
