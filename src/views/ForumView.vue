@@ -70,7 +70,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import Navbar from '../components/Navbar.vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { forumApi } from '../api/forum.js'
 import { favoriteApi } from '../api/common.js'
 import { Star, StarFilled } from '@element-plus/icons-vue'
@@ -194,7 +194,7 @@ const openCreatePostDialog = () => {
   showCreateDialog.value = true
 }
 
-// 提交表单
+// 提交表单 - 修复API调用和错误处理
 const submitPost = async () => {
   if (isSubmitting.value) return
 
@@ -202,56 +202,57 @@ const submitPost = async () => {
     isSubmitting.value = true
 
     // 验证表单
-    await new Promise((resolve, reject) => {
+    const valid = await new Promise((resolve) => {
       postFormRef.value.validate((valid) => {
-        if (valid) {
-          resolve()
-        } else {
-          const firstError = document.querySelector('.el-form-item__error')
-          firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          reject(new Error('表单验证失败'))
-        }
+        resolve(valid)
       })
     })
 
-    // 准备提交数据
-    const postData = {
-      title: newPost.title,
-      content: newPost.content,
-      author: 'test_user'
+    if (!valid) {
+      ElMessage.error('请检查表单输入')
+      return
     }
 
-    // 提交到API
-    const createdPost = await forumApi.createPost(postData)
+    // 准备提交数据 - 移除author字段，让后端从token获取用户信息
+    const postData = {
+      title: newPost.title.trim(),
+      content: newPost.content.trim()
+    }
 
-    // 更新本地数据
-    posts.value.unshift(createdPost)
-    originalPosts.value.unshift(createdPost)
-    totalPosts.value = posts.value.length
+    console.log('[Forum View] 开始发布帖子:', postData)
+
+    // 提交到API
+    const response = await forumApi.createPost(postData)
+    
+    console.log('[Forum View] 帖子发布响应:', response)
+
+    // 检查响应是否成功
+    if (!response) {
+      throw new Error('发布失败，请重试')
+    }
+
+    // 重新加载帖子列表以获取最新数据
+    await fetchPosts()
 
     // 关闭对话框
     showCreateDialog.value = false
 
     // 显示成功提示
-    ElMessage({
-      message: '帖子发布成功！',
-      type: 'success',
-      duration: 2000
-    })
-
-    // 跳转到新帖子
-    router.push(`/forum/detail/${createdPost.id}`)
+    ElMessage.success('帖子发布成功！')
 
     // 重置表单
     resetForm()
 
+    // 如果有返回的帖子ID，跳转到详情页
+    if (response.id) {
+      setTimeout(() => {
+        router.push(`/forum/detail/${response.id}`)
+      }, 1000)
+    }
+
   } catch (error) {
-    console.error('发布帖子出错:', error)
-    ElMessage({
-      message: error.message === '表单验证失败' ? '请检查表单输入' : '发布失败，请重试',
-      type: 'error',
-      duration: 3000
-    })
+    console.error('[Forum View] 发布帖子失败:', error)
+    ElMessage.error(error.message || '发布失败，请重试')
   } finally {
     isSubmitting.value = false
   }
@@ -264,15 +265,43 @@ const resetForm = () => {
   postFormRef.value?.resetFields()
 }
 
-// 关闭对话框
+// 关闭对话框 - 修复取消按钮功能
 const handleClose = (done) => {
-  handleCloseDialog()
-  done()
+  // 如果正在提交，询问用户是否确认关闭
+  if (isSubmitting.value) {
+    ElMessageBox.confirm('正在发布中，确定要取消吗？', '确认关闭', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      resetForm()
+      done()
+    }).catch(() => {
+      // 用户取消关闭操作
+    })
+  } else {
+    resetForm()
+    done()
+  }
 }
 
 const handleCloseDialog = () => {
-  showCreateDialog.value = false
-  resetForm()
+  // 如果正在提交，询问用户是否确认关闭
+  if (isSubmitting.value) {
+    ElMessageBox.confirm('正在发布中，确定要取消吗？', '确认关闭', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      showCreateDialog.value = false
+      resetForm()
+    }).catch(() => {
+      // 用户取消关闭操作
+    })
+  } else {
+    showCreateDialog.value = false
+    resetForm()
+  }
 }
 
 const goToPostDetail = async (post) => {
