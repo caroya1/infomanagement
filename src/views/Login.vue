@@ -25,7 +25,7 @@
 <script setup>
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { login } from '../mock/loginMock';
+import { login } from '../api/auth.js';
 import { useRouter } from 'vue-router';
 
 // 表单数据
@@ -64,18 +64,17 @@ const handleLogin = async () => {
       try {
         const { username, password } = loginForm.value;
         const response = await login(username, password);
-        
-        if (response.success) {
-          const { userType, token } = response.data;
-          
-          // 存储token到本地存储
-          localStorage.setItem('token', token);
-          localStorage.setItem('userType', userType);
-          
-          ElMessage.success(`${userType === 'admin' ? '管理员' : '普通用户'}登录成功`);
-          
-          // 根据用户类型跳转到不同页面
-          if (userType === 'admin') {
+
+        // 修复：正确访问后端返回的数据结构
+        if (response.success && response.data && response.data.token) {
+          // 存储token和用户信息
+          localStorage.setItem('token', response.data.token);
+          localStorage.setItem('userInfo', JSON.stringify(response.data));
+
+          ElMessage.success('登录成功');
+
+          // 根据用户类型跳转
+          if (response.data.userType === 'admin') {
             router.push('/admin');
           } else {
             router.push('/home');

@@ -30,7 +30,8 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus'
-import { learningApi } from '../mock/learningData.js';
+import { learningApi } from '../api/learning.js';
+import { reservationApi } from '../api/common.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -81,28 +82,14 @@ const loadActivityDetail = async () => {
 };
 
 // 预约活动
-const reserveActivity = async (id) => {
+const reserveActivity = async () => {
   try {
-    await learningApi.reserveActivity(id);
-    ElMessage({
-      message: '预约成功！',
-      type: 'success',
-      duration: 2000
-    });
-    // 将预约的活动添加到个人主页的我的预约列表
-    const userReservations = JSON.parse(localStorage.getItem('userReservations')) || [];
-    const newReservation = { ...activity.value };
-    if (!userReservations.some(reservation => reservation.id === newReservation.id)) {
-      userReservations.push(newReservation);
-      localStorage.setItem('userReservations', JSON.stringify(userReservations));
-    }
+    await reservationApi.addReservation(activity.value.id);
+    activity.value.reservedCount++;
+    ElMessage.success('预约成功！');
   } catch (error) {
-    console.error('预约活动失败', error);
-    ElMessage({
-      message: '预约失败，请重试',
-      type: 'error',
-      duration: 2000
-    });
+    console.error('预约失败:', error);
+    ElMessage.error('预约失败，请重试');
   }
 };
 
