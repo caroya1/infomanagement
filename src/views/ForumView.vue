@@ -4,11 +4,7 @@
 
     <el-row class="forum-header">
       <el-col :span="24">
-        <el-input 
-          v-model="searchText" 
-          placeholder="搜索帖子" 
-          prefix-icon="el-icon-search"
-          @keyup.enter="searchPost">
+        <el-input v-model="searchText" placeholder="搜索帖子" prefix-icon="el-icon-search" @keyup.enter="searchPost">
           <template #append>
             <el-button @click="searchPost">搜索</el-button>
           </template>
@@ -25,10 +21,8 @@
         <el-table :data="posts" stripe style="width: 100%">
           <el-table-column label="收藏" width="80">
             <template #default="scope">
-              <el-icon 
-                :class="{ 'scale-animation': scope.row.isAnimating }"
-                :color="isFavorite(scope.row.id)? 'green' : 'gray'" 
-                @click="toggleFavorite(scope.row)">
+              <el-icon :class="{ 'scale-animation': scope.row.isAnimating }"
+                :color="isFavorite(scope.row.id) ? 'green' : 'gray'" @click="toggleFavorite(scope.row)">
                 <StarFilled v-if="isFavorite(scope.row.id)" />
                 <Star v-else />
               </el-icon>
@@ -44,34 +38,21 @@
           <el-table-column prop="views" label="浏览量" width="80"></el-table-column>
         </el-table>
 
-        <el-pagination
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          :current-page="currentPage"
-          :page-sizes="[10, 20, 30]"
-          :page-size="pageSize"
-          layout="total, sizes, prev, pager, next, jumper"
+        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="currentPage"
+          :page-sizes="[10, 20, 30]" :page-size="pageSize" layout="total, sizes, prev, pager, next, jumper"
           :total="totalPosts">
         </el-pagination>
       </el-col>
     </el-row>
 
     <!-- 发布帖子对话框 -->
-    <el-dialog 
-      v-model="showCreateDialog" 
-      title="发布新帖"
-      :before-close="handleClose">
+    <el-dialog v-model="showCreateDialog" title="发布新帖" :before-close="handleClose">
       <el-form :model="newPost" :rules="postRules" ref="postFormRef" label-width="80px">
         <el-form-item label="标题" prop="title">
           <el-input v-model="newPost.title" placeholder="请输入帖子标题" maxlength="100" show-word-limit />
         </el-form-item>
         <el-form-item label="内容" prop="content">
-          <el-input 
-            type="textarea" 
-            v-model="newPost.content" 
-            rows="8" 
-            placeholder="请输入帖子内容"
-            maxlength="5000" 
+          <el-input type="textarea" v-model="newPost.content" rows="8" placeholder="请输入帖子内容" maxlength="5000"
             show-word-limit />
         </el-form-item>
       </el-form>
@@ -135,20 +116,20 @@ const fetchPosts = async () => {
   try {
     console.log('[Forum View] 开始获取帖子数据');
     const data = await forumApi.getPosts()
-    
+
     console.log('[Forum View] 获取到的数据:', {
       isArray: Array.isArray(data),
       length: data ? data.length : 0,
       type: typeof data
     });
-    
+
     // 确保数据是数组
     if (Array.isArray(data)) {
       originalPosts.value = data
       posts.value = data
       totalPosts.value = data.length
       console.log('[Forum View] 帖子数据设置成功，共', data.length, '条');
-      
+
       // 批量加载收藏状态
       await loadFavoriteStatus(data)
     } else {
@@ -157,7 +138,7 @@ const fetchPosts = async () => {
       originalPosts.value = []
       posts.value = []
       totalPosts.value = 0
-      
+
       ElMessage({
         message: '帖子数据格式异常，请联系管理员',
         type: 'error',
@@ -166,12 +147,12 @@ const fetchPosts = async () => {
     }
   } catch (error) {
     console.error('[Forum View] 获取帖子列表异常:', error)
-    
+
     // 出错时设置为空数组
     originalPosts.value = []
     posts.value = []
     totalPosts.value = 0
-    
+
     ElMessage({
       message: '加载帖子列表失败，请重试',
       type: 'error',
@@ -320,14 +301,14 @@ const searchPost = () => {
     const filteredPosts = originalPosts.value.filter(post => {
       // 添加属性存在检查
       if (!post) return false;
-      
+
       const title = post.title || '';
       const content = post.content || '';
       const author = post.author || '';
-      
-      return title.includes(searchText.value) || 
-             content.includes(searchText.value) || 
-             author.includes(searchText.value);
+
+      return title.includes(searchText.value) ||
+        content.includes(searchText.value) ||
+        author.includes(searchText.value);
     })
     posts.value = filteredPosts
   }
@@ -351,13 +332,13 @@ const toggleFavorite = async (post) => {
     ElMessage.error('无效的帖子信息')
     return
   }
-  
+
   // 立即更新UI状态
   const isCurrentlyFavorite = favoriteStatus.value.get(post.id) || false
-  
+
   // 添加动画状态
   post.isAnimating = true
-  
+
   try {
     if (isCurrentlyFavorite) {
       // 取消收藏
@@ -370,7 +351,7 @@ const toggleFavorite = async (post) => {
       favoriteStatus.value.set(post.id, true)
       ElMessage.success('已添加到收藏')
     }
-    
+
     // 等待动画完成后重置状态
     await new Promise(resolve => setTimeout(resolve, 300))
     post.isAnimating = false

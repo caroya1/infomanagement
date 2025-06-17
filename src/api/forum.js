@@ -7,7 +7,7 @@ export const forumApi = {
     try {
       console.log('[Forum API] 开始获取帖子列表:', params);
       const response = await api.get('/forum/posts', { params });
-      
+
       console.log('[Forum API] 原始响应:', {
         success: response.success,
         hasData: !!response.data,
@@ -46,7 +46,7 @@ export const forumApi = {
     try {
       console.log('[Forum API] 获取帖子详情:', id);
       const response = await api.get(`/forum/posts/${id}`);
-      
+
       if (response.success && response.data) {
         console.log('[Forum API] 帖子详情获取成功');
         return response.data;
@@ -100,7 +100,7 @@ export const forumApi = {
       const response = await api.post(`/forum/posts/${id}/view`, {
         views: newViews
       });
-      
+
       if (response.success) {
         console.log('[Forum API] 浏览量更新成功');
         return true;

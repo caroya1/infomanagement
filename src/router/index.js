@@ -16,9 +16,9 @@ import { ElMessage } from 'element-plus';
 const requireAuth = async (to, from, next) => {
   const token = localStorage.getItem('token');
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-  
+
   console.log('[Router Debug] 路由守卫检查:', { hasToken: !!token, userType: userInfo.userType });
-  
+
   if (!token) {
     console.log('[Router Debug] 无token，重定向到登录页');
     next('/login');
@@ -27,7 +27,7 @@ const requireAuth = async (to, from, next) => {
       // 使用真实的后端API验证token
       const response = await getUserInfo();
       console.log('[Router Debug] Token验证结果:', { success: response.success });
-      
+
       if (response.success) {
         // 已登录，检查权限
         if (to.name === 'Admin' && userInfo.userType !== 'admin') {

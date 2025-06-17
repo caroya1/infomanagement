@@ -8,12 +8,14 @@
         <el-menu-item index="mall">商城</el-menu-item>
         <el-menu-item index="profile">我的</el-menu-item>
       </el-menu>
-      
+
       <!-- 用户信息和退出登录区域 -->
       <div class="user-section">
         <el-dropdown @command="handleUserCommand">
           <span class="user-info">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             {{ userInfo.nickname || userInfo.username || '用户' }}
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </span>
@@ -84,7 +86,7 @@ const handleSelect = (key) => {
 // 处理用户下拉菜单命令
 const handleUserCommand = async (command) => {
   console.log('[Navbar Debug] 用户命令:', command);
-  
+
   if (command === 'logout') {
     // 确认退出登录
     try {
@@ -97,7 +99,7 @@ const handleUserCommand = async (command) => {
           type: 'warning',
         }
       )
-      
+
       // 执行退出登录
       await performLogout()
     } catch (error) {
@@ -113,28 +115,28 @@ const handleUserCommand = async (command) => {
 const performLogout = async () => {
   try {
     console.log('[Navbar Debug] 开始执行退出登录')
-    
+
     // 调用后端退出登录API
     await logout()
-    
+
     // 清除本地存储的用户信息
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
-    
+
     // 显示成功消息
     ElMessage.success('退出登录成功')
-    
+
     // 跳转到登录页
     router.push('/login')
-    
+
     console.log('[Navbar Debug] 退出登录完成')
   } catch (error) {
     console.error('[Navbar Debug] 退出登录失败:', error)
-    
+
     // 即使后端请求失败，也要清除本地数据
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
-    
+
     ElMessage.warning('退出登录完成')
     router.push('/login')
   }
@@ -147,7 +149,7 @@ const performLogout = async () => {
   color: #333;
   line-height: 60px;
   border-bottom: 1px solid #e6e6e6;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-container {
