@@ -49,9 +49,6 @@ const loadPostDetail = async () => {
     
     if (postData) {
       post.value = { ...postData };
-      // 更新浏览量
-      await forumApi.updateViews(postId, postData.views + 1);
-      post.value.views = postData.views + 1;
     } else {
       router.push('/forum');
       ElMessage({

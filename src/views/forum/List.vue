@@ -306,7 +306,7 @@ const handleCloseDialog = () => {
 
 const goToPostDetail = async (post) => {
   try {
-    await forumApi.updateViews(post.id, post.views + 1)
+    await forumApi.updateViews(post.id, post.views)
     router.push(`/forum/detail/${post.id}`)
   } catch (error) {
     console.error('更新浏览量失败', error)
