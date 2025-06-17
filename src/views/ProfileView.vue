@@ -8,6 +8,11 @@
           <el-form-item label="用户名">
             <el-input v-model="userInfo.username" disabled />
           </el-form-item>
+          <el-form-item label="账户余额">
+            <el-input v-model="userInfo.balance" disabled>
+              <template #prepend>¥</template>
+            </el-input>
+          </el-form-item>
           <el-form-item label="昵称">
             <el-input v-model="userInfo.nickname" />
           </el-form-item>
@@ -165,6 +170,7 @@ import Navbar from '../components/Navbar.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUserInfo, logout } from '../api/auth.js';
 import { favoriteApi } from '../api/common.js';
+import { cartApi, orderApi } from '../api/cart.js'
 import { useRouter } from 'vue-router'
 
 const router = useRouter();
@@ -174,113 +180,58 @@ const contentActiveTab = ref('articles');
 // 收藏相关
 const favorites = ref([]);
 
-// 用户信息
+// 用户信息 - 添加余额显示
 const userInfo = ref({
   username: 'test_user',
   nickname: '测试用户',
   email: 'test@example.com',
   phone: '13800138000',
-  gender: 'other'
+  gender: 'other',
+  balance: 0 // 添加余额字段
 });
 
 const imageUrl = ref('https://picsum.photos/100/100?random=31');
 
 // 购物车相关
-const cart = ref([
-  { productId: 1, quantity: 1 }
-]);
+const cart = ref([])
 
-const products = ref([
-  {
-    id: 1,
-    name: '高级智能手表',
-    price: 1299,
-    imageUrl: 'https://picsum.photos/100/100?random=21'
-  },
-  {
-    id: 2,
-    name: '无线蓝牙耳机',
-    price: 799,
-    imageUrl: 'https://picsum.photos/100/100?random=22'
+// 订单相关
+const orders = ref([])
+
+// 获取购物车数据
+const loadCart = async () => {
+  try {
+    console.log('[Profile View] 开始获取购物车数据');
+    const cartItems = await cartApi.getCart()
+    cart.value = cartItems
+    console.log('[Profile View] 购物车数据获取成功，共', cartItems.length, '个商品');
+  } catch (error) {
+    console.error('[Profile View] 获取购物车数据失败:', error);
+    cart.value = []
+    ElMessage.error('获取购物车数据失败');
   }
-]);
+}
 
+// 计算购物车商品信息 - 使用后端返回的完整数据
 const cartItems = computed(() => {
-  return cart.value.map(item => {
-    const product = products.value.find(p => p.id === item.productId);
-    return {
-      ...product,
-      quantity: item.quantity,
-      totalPrice: product ? product.price * item.quantity : 0
-    };
-  });
-});
-
-const totalPrice = computed(() => {
-  return cartItems.value.reduce((total, item) => total + (item.totalPrice || 0), 0);
-});
-
-// 订单数据
-const orders = ref([
-  {
-    orderId: '20250601001',
-    createTime: '2025-06-01 10:30',
-    items: [
-      {
-        productId: 1,
-        name: '高级智能手表',
-        imageUrl: 'https://picsum.photos/100/100?random=21',
-        quantity: 1
-      }
-    ],
-    totalAmount: 1299,
-    status: 'completed'
-  },
-  {
-    orderId: '20250605002',
-    createTime: '2025-06-05 15:45',
-    items: [
-      {
-        productId: 2,
-        name: '无线蓝牙耳机',
-        imageUrl: 'https://picsum.photos/100/100?random=22',
-        quantity: 1
-      },
-      {
-        productId: 5,
-        name: '机械键盘',
-        imageUrl: 'https://picsum.photos/100/100?random=25',
-        quantity: 1
-      }
-    ],
-    totalAmount: 1198,
-    status: 'shipped'
-  },
-  {
-    orderId: '20250608003',
-    createTime: '2025-06-08 09:20',
-    items: [
-      {
-        productId: 3,
-        name: '超薄笔记本电脑',
-        imageUrl: 'https://picsum.photos/100/100?random=23',
-        quantity: 1
-      }
-    ],
-    totalAmount: 5699,
-    status: 'pending'
+  if (!Array.isArray(cart.value)) {
+    return []
   }
-]);
 
-// 用户内容
-const articles = ref([
-  { title: 'Vue3入门教程', createTime: '2023-06-10', status: '已发布' },
-  { title: 'ElementPlus组件使用', createTime: '2023-06-15', status: '已发布' },
-  { title: '前端性能优化', createTime: '2023-06-20', status: '草稿' }
-]);
+  return cart.value.map(item => ({
+    id: item.productId,
+    name: item.productName || '未知商品',
+    price: item.productPrice || 0,
+    imageUrl: item.productImageUrl || 'https://picsum.photos/100/100?random=1',
+    quantity: item.quantity || 1,
+    totalPrice: item.productPrice ? (item.productPrice * item.quantity) : 0
+  }))
+})
 
-// 预约数据
-const userReservations = ref([]);
+// 计算购物车总价
+const totalPrice = computed(() => {
+  return cartItems.value.reduce((total, item) => total + (item.totalPrice || 0), 0)
+})
 
 // 加载收藏
 const loadFavorites = () => {
@@ -324,49 +275,230 @@ const saveUserInfo = () => {
   alert('个人信息已保存！');
 };
 
-// 购物车操作
-const handleQuantityChange = (item) => {
-  const cartItem = cart.value.find(i => i.productId === item.id);
-  if (cartItem) {
-    cartItem.quantity = item.quantity;
-  }
-};
-
-const removeFromCart = (item) => {
-  if (confirm('确定要从购物车中移除该商品吗？')) {
-    cart.value = cart.value.filter(i => i.productId !== item.id);
-  }
-};
-
-const checkout = () => {
-  if (cartItems.value.length === 0) {
-    alert('购物车为空！');
+// 更新购物车商品数量 - 使用真实API
+const handleQuantityChange = async (item) => {
+  if (!item || !item.id || !item.quantity || item.quantity < 1) {
+    ElMessage.error('数量必须大于0');
     return;
   }
 
-  const now = new Date();
-  const formattedTime = now.toISOString().slice(0, 19).replace('T', ' ');
-  const orderId = 'ORD' + now.getTime().toString().slice(-10);
+  try {
+    console.log('[Profile View] 更新购物车商品数量:', item.name, item.quantity);
+    
+    // 调用后端API更新数量
+    await cartApi.updateCartItem(item.id, item.quantity);
+    
+    // 重新获取购物车数据以保持同步
+    await loadCart();
+    
+    ElMessage.success('数量更新成功');
+  } catch (error) {
+    console.error('[Profile View] 更新购物车数量失败:', error);
+    ElMessage.error(error.message || '更新数量失败');
+    
+    // 重新加载购物车以恢复原始数据
+    await loadCart();
+  }
+}
 
-  const newOrder = {
-    orderId,
-    createTime: formattedTime,
-    items: cartItems.value.map(item => ({
-      productId: item.id,
-      name: item.name,
-      imageUrl: item.imageUrl,
-      quantity: item.quantity
-    })),
-    totalAmount: totalPrice.value,
-    status: 'pending'
-  };
+// 从购物车移除商品 - 使用真实API
+const removeFromCart = async (item) => {
+  if (!item || !item.id) {
+    ElMessage.error('商品信息无效');
+    return;
+  }
 
-  orders.value.unshift(newOrder);
-  cart.value = [];
+  try {
+    await ElMessageBox.confirm(
+      `确定要从购物车中移除 ${item.name} 吗？`,
+      '确认移除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
 
-  alert('订单创建成功！');
-  activeTab.value = 'orders';
-};
+    console.log('[Profile View] 从购物车移除商品:', item.name);
+    
+    // 调用后端API移除商品
+    await cartApi.removeFromCart(item.id);
+    
+    // 重新获取购物车数据以保持同步
+    await loadCart();
+    
+    ElMessage.success(`已从购物车中移除 ${item.name}`);
+  } catch (error) {
+    if (error === 'cancel') {
+      console.log('[Profile View] 用户取消移除商品');
+    } else {
+      console.error('[Profile View] 移除商品失败:', error);
+      ElMessage.error(error.message || '移除商品失败');
+    }
+  }
+}
+
+// 结算功能 - 使用真实的后端API
+const checkout = async () => {
+  if (cartItems.value.length === 0) {
+    ElMessage.warning('购物车为空！');
+    return;
+  }
+
+  try {
+    // 显示结算确认对话框，包含余额信息
+    const confirmMessage = `
+      确定要结算购物车中的 ${cartItems.value.length} 件商品吗？
+      订单金额：¥${totalPrice.value.toFixed(2)}
+      当前余额：¥${(userInfo.value.balance || 0).toFixed(2)}
+    `;
+
+    await ElMessageBox.confirm(
+      confirmMessage,
+      '确认结算',
+      {
+        confirmButtonText: '确定结算',
+        cancelButtonText: '取消',
+        type: 'info',
+        dangerouslyUseHTMLString: true
+      }
+    )
+
+    console.log('[Profile View] 开始购物车结算');
+
+    // 调用后端API进行结算
+    const order = await orderApi.checkout({
+      shippingAddress: '默认收货地址', // 可以后续添加地址选择功能
+      remark: '购物车结算'
+    });
+
+    // 重新获取用户信息以更新余额
+    await loadUserInfo();
+
+    // 重新获取购物车数据（应该已被清空）
+    await loadCart();
+
+    // 重新获取订单列表
+    await loadOrders();
+
+    ElMessage.success(`订单创建成功！订单号：${order.orderNumber}`);
+    activeTab.value = 'orders';
+  } catch (error) {
+    if (error === 'cancel') {
+      console.log('[Profile View] 用户取消结算');
+    } else {
+      console.error('[Profile View] 结算失败:', error);
+      ElMessage.error(error.message || '结算失败，请重试');
+    }
+  }
+}
+
+// 加载用户信息
+const loadUserInfo = async () => {
+  try {
+    const response = await getUserInfo();
+    if (response.success && response.data) {
+      userInfo.value = {
+        ...userInfo.value,
+        ...response.data,
+        balance: response.data.balance || 0
+      };
+      console.log('[Profile View] 用户信息加载成功, 余额:', userInfo.value.balance);
+    }
+  } catch (error) {
+    console.error('[Profile View] 加载用户信息失败:', error);
+  }
+}
+
+// 加载订单列表
+const loadOrders = async () => {
+  try {
+    console.log('[Profile View] 开始获取订单列表');
+    const orderList = await orderApi.getUserOrders();
+    
+    // 转换订单数据格式以适配前端显示
+    orders.value = orderList.map(order => ({
+      id: order.id,
+      orderId: order.orderNumber,
+      orderNumber: order.orderNumber,
+      createTime: order.createTime,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      shippingAddress: order.shippingAddress,
+      remark: order.remark,
+      items: [] // 订单项需要单独加载，这里先设为空数组
+    }));
+    
+    console.log('[Profile View] 订单列表加载成功，共', orders.value.length, '个订单');
+  } catch (error) {
+    console.error('[Profile View] 获取订单列表失败:', error);
+    orders.value = [];
+    ElMessage.error('获取订单列表失败');
+  }
+}
+
+// 取消订单
+const cancelOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要取消订单 ${order.orderNumber} 吗？如果已支付将退还到余额中。`,
+      '确认取消订单',
+      {
+        confirmButtonText: '确定取消',
+        cancelButtonText: '取消操作',
+        type: 'warning',
+      }
+    )
+
+    console.log('[Profile View] 取消订单:', order.orderNumber);
+    
+    // 调用后端API取消订单
+    await orderApi.cancelOrder(order.id);
+    
+    // 重新加载订单列表和用户信息
+    await loadOrders();
+    await loadUserInfo();
+    
+    ElMessage.success('订单取消成功！');
+  } catch (error) {
+    if (error === 'cancel') {
+      console.log('[Profile View] 用户取消操作');
+    } else {
+      console.error('[Profile View] 取消订单失败:', error);
+      ElMessage.error(error.message || '取消订单失败');
+    }
+  }
+}
+
+// 确认收货
+const confirmReceipt = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认收到订单 ${order.orderNumber} 的商品了吗？`,
+      '确认收货',
+      {
+        confirmButtonText: '确认收货',
+        cancelButtonText: '取消',
+        type: 'info',
+      }
+    )
+
+    // 这里可以调用后端API确认收货
+    // await orderApi.confirmReceipt(order.id);
+    
+    // 暂时直接更新状态
+    order.status = 'completed';
+    ElMessage.success('确认收货成功！');
+  } catch (error) {
+    if (error === 'cancel') {
+      console.log('[Profile View] 用户取消确认收货');
+    } else {
+      console.error('[Profile View] 确认收货失败:', error);
+      ElMessage.error('确认收货失败');
+    }
+  }
+}
 
 // 订单状态相关
 const getStatusText = (status) => {
@@ -391,35 +523,13 @@ const getStatusType = (status) => {
   return typeMap[status] || 'info';
 };
 
-const cancelOrder = (order) => {
-  if (confirm('确定要取消该订单吗？')) {
-    order.status = 'cancelled';
-    alert('订单已取消！');
-  }
-};
-
-const confirmReceipt = (order) => {
-  if (confirm('确认收到商品了吗？')) {
-    order.status = 'completed';
-    alert('订单已完成！');
-  }
-};
-
 // 组件挂载时执行
 onMounted(async () => {
   const token = localStorage.getItem('token');
   if (token) {
     try {
-      // 不需要传递token参数，getUserInfo会自动从请求拦截器获取
-      const response = await getUserInfo();
-      if (response.success) {
-        const { username: userUsername, userId: userUserId, userType } = response.data;
-        userInfo.value.username = userUsername;
-        // 可以根据需要更新其他用户信息
-      } else {
-        ElMessage.error(response.message || '获取用户信息失败');
-        logout();
-      }
+      // 加载用户信息（包含余额）
+      await loadUserInfo();
     } catch (error) {
       ElMessage.error('获取用户信息请求出错');
       console.error('获取用户信息错误:', error);
@@ -431,6 +541,12 @@ onMounted(async () => {
 
   // 加载收藏数据
   loadFavorites();
+  
+  // 加载购物车数据
+  loadCart();
+  
+  // 加载订单数据
+  loadOrders();
 });
 </script>
 
