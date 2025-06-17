@@ -1,7 +1,6 @@
 <template>
   <div class="profile-container">
     <Navbar />
-
     <el-tabs v-model="activeTab" type="card">
       <el-tab-pane label="个人信息" name="info">
         <el-form :model="userInfo" label-width="120px">
@@ -64,9 +63,7 @@
           </el-table-column>
           <el-table-column label="数量" width="150">
             <template #default="scope">
-              <el-input-number v-model="scope.row.quantity" :min="1" @change="handleQuantityChange(scope.row)"
-                size="small">
-              </el-input-number>
+              <el-input-number v-model="scope.row.quantity" :min="1" @change="handleQuantityChange(scope.row)" size="small"></el-input-number>
             </template>
           </el-table-column>
           <el-table-column prop="totalPrice" label="小计" width="100">
@@ -76,13 +73,10 @@
           </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="scope">
-              <el-button size="mini" type="danger" @click="removeFromCart(scope.row)">
-                删除
-              </el-button>
+              <el-button size="mini" type="danger" @click="removeFromCart(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
-
         <div class="cart-summary">
           <span>总计: ¥{{ totalPrice }}</span>
           <el-button type="primary" @click="checkout">结算</el-button>
@@ -109,12 +103,8 @@
           </el-table-column>
           <el-table-column label="操作" width="120">
             <template #default="scope">
-              <el-button size="mini" v-if="scope.row.status === 'pending'" @click="cancelOrder(scope.row)">
-                取消订单
-              </el-button>
-              <el-button size="mini" v-if="scope.row.status === 'shipped'" @click="confirmReceipt(scope.row)">
-                确认收货
-              </el-button>
+              <el-button size="mini" v-if="scope.row.status === 'pending'" @click="cancelOrder(scope.row)">取消订单</el-button>
+              <el-button size="mini" v-if="scope.row.status === 'shipped'" @click="confirmReceipt(scope.row)">确认收货</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -133,9 +123,7 @@
             <el-table :data="favorites" stripe>
               <el-table-column label="收藏" width="80">
                 <template #default="scope">
-                  <el-icon color="yellow" @click="removeFavorite(scope.row.id)">
-                    <StarFilled />
-                  </el-icon>
+                  <el-icon color="yellow" @click="removeFavorite(scope.row.id)"><StarFilled /></el-icon>
                 </template>
               </el-table-column>
               <el-table-column prop="title" label="收藏标题"></el-table-column>
@@ -144,7 +132,6 @@
               <el-table-column prop="views" label="浏览量"></el-table-column>
             </el-table>
           </el-tab-pane>
-
           <el-tab-pane label="我的预约" name="reservations">
             <el-table :data="userReservations" stripe>
               <el-table-column prop="title" label="活动标题"></el-table-column>
@@ -153,7 +140,6 @@
               <el-table-column prop="reservedCount" label="已预约人数"></el-table-column>
             </el-table>
           </el-tab-pane>
-
         </el-tabs>
       </el-tab-pane>
 
@@ -192,9 +178,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showRechargeDialog = false">取消</el-button>
-          <el-button type="primary" @click="handleRecharge" :loading="rechargeLoading">
-            确认充值
-          </el-button>
+          <el-button type="primary" @click="handleRecharge" :loading="rechargeLoading">确认充值</el-button>
         </span>
       </template>
     </el-dialog>
@@ -228,13 +212,15 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import Navbar from '../components/Navbar.vue'
+import Navbar from '../../components/common/Navbar.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserInfo, logout } from '../api/auth.js';
-import { favoriteApi, rechargeApi } from '../api/common.js';
-import { cartApi, orderApi } from '../api/cart.js'
+import { getUserInfo, logout } from '../../api/auth.js';
+import { favoriteApi, rechargeApi } from '../../api/common.js';
+import { cartApi, orderApi } from '../../api/cart.js'
 import { useRouter } from 'vue-router'
-import api from '../api/auth.js'; // 导入api实例用于直接API调用
+import api from '../../api/auth.js';
+import { learningApi } from '../../api/learning.js';
+
 
 const router = useRouter();
 const activeTab = ref('info');
@@ -261,16 +247,15 @@ const cart = ref([])
 // 订单相关
 const orders = ref([])
 
-// 添加缺失的响应式数据定义
-const articles = ref([]) // 用户文章列表
-const userReservations = ref([]) // 用户预约列表
+// 文章相关
+const articles = ref([])
+
+// 预约相关
+const userReservations = ref([])
 
 // 充值相关
 const showRechargeDialog = ref(false);
-const rechargeForm = ref({
-  amount: 0,
-  paymentMethod: 'alipay'
-});
+const rechargeForm = ref({ amount: 0, paymentMethod: 'alipay' });
 const rechargeLoading = ref(false);
 const showRechargeHistoryDialog = ref(false);
 const rechargeHistory = ref([]);
@@ -310,39 +295,34 @@ const totalPrice = computed(() => {
   return cartItems.value.reduce((total, item) => total + (item.totalPrice || 0), 0)
 })
 
-// 加载收藏 - 修复异步问题
+// 加载收藏
 const loadFavorites = async () => {
   try {
-    console.log('[Profile View] 开始加载收藏数据');
     const favoriteList = await favoriteApi.getFavorites();
     favorites.value = Array.isArray(favoriteList) ? favoriteList : [];
-    console.log('[Profile View] 收藏数据加载成功，共', favorites.value.length, '条');
   } catch (error) {
-    console.error('[Profile View] 加载收藏数据失败:', error);
     favorites.value = [];
   }
 };
 
-// 添加收藏 - 修复异步问题
+// 添加收藏
 const addFavorite = async (item) => {
   try {
     await favoriteApi.addFavorite(item.id, item.type || 'forum');
-    await loadFavorites(); // 重新加载收藏列表
+    await loadFavorites();
     ElMessage.success('已添加到收藏');
   } catch (error) {
-    console.error('[Profile View] 添加收藏失败:', error);
     ElMessage.error(error.message || '添加收藏失败');
   }
 };
 
-// 移除收藏 - 修复异步问题
+// 移除收藏
 const removeFavorite = async (id, postType = 'forum') => {
   try {
     await favoriteApi.removeFavorite(id, postType);
-    await loadFavorites(); // 重新加载收藏列表
+    await loadFavorites();
     ElMessage.success('已从收藏中移除');
   } catch (error) {
-    console.error('[Profile View] 移除收藏失败:', error);
     ElMessage.error(error.message || '移除收藏失败');
   }
 };
@@ -533,40 +513,26 @@ const loadOrders = async () => {
   }
 }
 
-// 加载用户文章 - 调用真实API
+// 加载文章
 const loadArticles = async () => {
   try {
-    console.log('[Profile View] 开始获取用户文章列表');
     const response = await api.get('/profile/posts');
-    
     if (response.success && response.data) {
       articles.value = Array.isArray(response.data) ? response.data : [];
-      console.log('[Profile View] 文章列表加载成功，共', articles.value.length, '篇');
     } else {
-      console.error('[Profile View] 获取文章列表失败:', response.message);
       articles.value = [];
     }
   } catch (error) {
-    console.error('[Profile View] 获取文章列表失败:', error);
     articles.value = [];
   }
 }
 
-// 加载用户预约 - 调用真实API
+// 加载用户预约
 const loadUserReservations = async () => {
   try {
-    console.log('[Profile View] 开始获取用户预约列表');
-    const response = await api.get('/profile/reservations');
-    
-    if (response.success && response.data) {
-      userReservations.value = Array.isArray(response.data) ? response.data : [];
-      console.log('[Profile View] 预约列表加载成功，共', userReservations.value.length, '个');
-    } else {
-      console.error('[Profile View] 获取预约列表失败:', response.message);
-      userReservations.value = [];
-    }
+    const reservations = await learningApi.getUserReservations();
+    userReservations.value = Array.isArray(reservations) ? reservations : [];
   } catch (error) {
-    console.error('[Profile View] 获取预约列表失败:', error);
     userReservations.value = [];
   }
 }
@@ -656,7 +622,6 @@ const getStatusType = (status) => {
   return typeMap[status] || 'info';
 };
 
-// 获取支付方式文本
 const getPaymentMethodText = (method) => {
   const methodMap = {
     alipay: '支付宝',
@@ -666,7 +631,7 @@ const getPaymentMethodText = (method) => {
   return methodMap[method] || method;
 };
 
-// 处理充值
+// 充值相关
 const handleRecharge = async () => {
   if (rechargeForm.value.amount <= 0) {
     ElMessage.warning('请输入有效的充值金额');
@@ -675,43 +640,27 @@ const handleRecharge = async () => {
 
   try {
     rechargeLoading.value = true;
-
-    // 调用后端API进行充值
     await rechargeApi.recharge(rechargeForm.value.amount, rechargeForm.value.paymentMethod);
-
     rechargeLoading.value = false;
     ElMessage.success('充值成功！');
     showRechargeDialog.value = false;
-
-    // 重新加载用户信息
     await loadUserInfo();
-
-    // 重置充值表单
-    rechargeForm.value = {
-      amount: 0,
-      paymentMethod: 'alipay'
-    };
+    rechargeForm.value = { amount: 0, paymentMethod: 'alipay' };
   } catch (error) {
     rechargeLoading.value = false;
-    console.error('[Profile View] 充值失败:', error);
     ElMessage.error(error.message || '充值失败，请稍后重试');
   }
 }
 
-// 设置快捷充值金额
 const setQuickAmount = (amount) => {
   rechargeForm.value.amount = amount;
 };
 
-// 加载充值记录
 const loadRechargeHistory = async () => {
   try {
-    console.log('[Profile View] 开始获取充值记录');
     const history = await rechargeApi.getRechargeHistory();
     rechargeHistory.value = Array.isArray(history) ? history : [];
-    console.log('[Profile View] 充值记录加载成功，共', rechargeHistory.value.length, '条');
   } catch (error) {
-    console.error('[Profile View] 获取充值记录失败:', error);
     rechargeHistory.value = [];
   }
 };
@@ -725,7 +674,6 @@ onMounted(async () => {
       await loadUserInfo();
     } catch (error) {
       ElMessage.error('获取用户信息请求出错');
-      console.error('获取用户信息错误:', error);
       logout();
     }
   } else {
@@ -741,10 +689,10 @@ onMounted(async () => {
   // 加载订单数据
   loadOrders();
 
-  // 加载用户文章
+  // 加载文章数据
   loadArticles();
 
-  // 加载用户预约
+  // 加载用户预约数据
   loadUserReservations();
 
   // 加载充值记录
@@ -754,53 +702,76 @@ onMounted(async () => {
 
 <style scoped>
 .profile-container {
-  padding: 20px;
-  background-color: #f5f7fa;
-  min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.avatar-uploader {
-  display: inline-block;
-  width: 100px;
-  height: 100px;
-  border: 1px solid #dcdfe6;
-  border-radius: 50%;
-  overflow: hidden;
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
   position: relative;
+  overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
 }
 
 .avatar-uploader-icon {
   font-size: 28px;
-  color: #c0c4cc;
+  color: #8c939d;
+  width: 100px;
+  height: 100px;
   line-height: 100px;
   text-align: center;
 }
 
 .avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100px;
+  height: 100px;
+  display: block;
 }
 
 .cart-product-image {
   width: 60px;
   height: 60px;
   object-fit: cover;
-  border-radius: 4px;
+}
+
+.cart-summary {
+  margin-top: 20px;
+  text-align: right;
+  font-size: 16px;
+}
+
+.cart-summary span {
+  margin-right: 20px;
+  font-weight: 600;
 }
 
 .order-product-image {
   width: 40px;
   height: 40px;
   object-fit: cover;
-  border-radius: 4px;
-  margin-right: 8px;
+  margin-right: 10px;
 }
 
 .order-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
+}
+
+.logout-container {
+  padding: 50px;
+  text-align: center;
+}
+
+.logout-container p {
+  margin-bottom: 20px;
+  font-size: 18px;
 }
 
 .dialog-footer {
@@ -819,4 +790,3 @@ onMounted(async () => {
   border-top: 1px solid #e4e7ed;
 }
 </style>
-

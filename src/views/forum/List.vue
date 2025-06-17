@@ -68,11 +68,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import Navbar from '../components/Navbar.vue'
+import Navbar from '../../components/common/Navbar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { forumApi } from '../api/forum.js'
-import { favoriteApi } from '../api/common.js'
+import { forumApi } from '../../api/forum.js'
+import { favoriteApi } from '../../api/common.js'
 import { Star, StarFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -306,7 +306,7 @@ const handleCloseDialog = () => {
 
 const goToPostDetail = async (post) => {
   try {
-    await forumApi.updateViews(post.id, post.views + 1)
+    await forumApi.updateViews(post.id, post.views)
     router.push(`/forum/detail/${post.id}`)
   } catch (error) {
     console.error('更新浏览量失败', error)

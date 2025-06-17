@@ -35,7 +35,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { User, ArrowDown } from '@element-plus/icons-vue'
-import { logout } from '../api/auth'
+import { logout } from '../../api/auth'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()

@@ -30,8 +30,8 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus'
-import { learningApi } from '../api/learning.js';
-import { reservationApi } from '../api/common.js';
+import { learningApi } from '../../api/learning.js';
+import { reservationApi } from '../../api/common.js';
 
 const route = useRoute();
 const router = useRouter();

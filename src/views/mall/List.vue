@@ -64,9 +64,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import Navbar from '../components/Navbar.vue'
+import Navbar from '../../components/common/Navbar.vue'
 import { ElMessage } from 'element-plus'
-import { productApi, cartApi } from '../api/cart.js'
+import { productApi, cartApi } from '../../api/cart.js'
 
 const searchText = ref('')
 const sortType = ref('default')
