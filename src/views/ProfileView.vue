@@ -25,12 +25,8 @@
             </el-radio-group>
           </el-form-item>
           <el-form-item label="头像">
-            <el-upload
-              class="avatar-uploader"
-              action="https://jsonplaceholder.typicode.com/posts/"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload">
+            <el-upload class="avatar-uploader" action="https://jsonplaceholder.typicode.com/posts/"
+              :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
               <img v-if="imageUrl" :src="imageUrl" class="avatar">
               <i v-else class="el-icon-plus avatar-uploader-icon"></i>
             </el-upload>
@@ -60,10 +56,7 @@
           </el-table-column>
           <el-table-column label="数量" width="150">
             <template #default="scope">
-              <el-input-number
-                v-model="scope.row.quantity"
-                :min="1"
-                @change="handleQuantityChange(scope.row)"
+              <el-input-number v-model="scope.row.quantity" :min="1" @change="handleQuantityChange(scope.row)"
                 size="small">
               </el-input-number>
             </template>
@@ -75,10 +68,7 @@
           </el-table-column>
           <el-table-column label="操作" width="100">
             <template #default="scope">
-              <el-button
-                size="mini"
-                type="danger"
-                @click="removeFromCart(scope.row)">
+              <el-button size="mini" type="danger" @click="removeFromCart(scope.row)">
                 删除
               </el-button>
             </template>
@@ -111,16 +101,10 @@
           </el-table-column>
           <el-table-column label="操作" width="120">
             <template #default="scope">
-              <el-button
-                size="mini"
-                v-if="scope.row.status === 'pending'"
-                @click="cancelOrder(scope.row)">
+              <el-button size="mini" v-if="scope.row.status === 'pending'" @click="cancelOrder(scope.row)">
                 取消订单
               </el-button>
-              <el-button
-                size="mini"
-                v-if="scope.row.status === 'shipped'"
-                @click="confirmReceipt(scope.row)">
+              <el-button size="mini" v-if="scope.row.status === 'shipped'" @click="confirmReceipt(scope.row)">
                 确认收货
               </el-button>
             </template>
@@ -137,7 +121,7 @@
               <el-table-column prop="status" label="状态"></el-table-column>
             </el-table>
           </el-tab-pane>
-<el-tab-pane label="我的收藏" name="favorites">
+          <el-tab-pane label="我的收藏" name="favorites">
             <el-table :data="favorites" stripe>
               <el-table-column label="收藏" width="80">
                 <template #default="scope">
@@ -189,51 +173,6 @@ const contentActiveTab = ref('articles');
 
 // 收藏相关
 const favorites = ref([]);
-
-onMounted(async () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const response = await getUserInfo(token);
-      if (response.success) {
-        const { username: userUsername, userId: userUserId, userType } = response.data;
-        userInfo.value.username = userUsername;
-        // 可以根据需要更新其他用户信息
-      } else {
-        ElMessage.error(response.message || '获取用户信息失败');
-        logout();
-      }
-    } catch (error) {
-      ElMessage.error('获取用户信息请求出错');
-      console.error('获取用户信息错误:', error);
-      logout();
-    }
-  } else {
-    logout();
-  }
-  
-  // 加载收藏数据
-  loadFavorites();
-});
-
-// 加载收藏
-const loadFavorites = () => {
-  favorites.value = favoriteApi.getFavorites();
-};
-
-// 添加收藏
-const addFavorite = (item) => {
-  favoriteApi.addFavorite(item);
-  loadFavorites();
-  ElMessage.success('已添加到收藏');
-};
-
-// 移除收藏
-const removeFavorite = (id) => {
-  favoriteApi.removeFavorite(id);
-  loadFavorites();
-  ElMessage.success('已从收藏中移除');
-};
 
 // 用户信息
 const userInfo = ref({
@@ -340,6 +279,28 @@ const articles = ref([
   { title: '前端性能优化', createTime: '2023-06-20', status: '草稿' }
 ]);
 
+// 预约数据
+const userReservations = ref([]);
+
+// 加载收藏
+const loadFavorites = () => {
+  favorites.value = favoriteApi.getFavorites();
+};
+
+// 添加收藏
+const addFavorite = (item) => {
+  favoriteApi.addFavorite(item);
+  loadFavorites();
+  ElMessage.success('已添加到收藏');
+};
+
+// 移除收藏
+const removeFavorite = (id) => {
+  favoriteApi.removeFavorite(id);
+  loadFavorites();
+  ElMessage.success('已从收藏中移除');
+};
+
 // 头像上传处理
 const handleAvatarSuccess = (res, file) => {
   imageUrl.value = URL.createObjectURL(file.raw);
@@ -444,18 +405,13 @@ const confirmReceipt = (order) => {
   }
 };
 
-// 退出登录
-const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('userType');
-  router.push('/login');
-};
-
+// 组件挂载时执行
 onMounted(async () => {
   const token = localStorage.getItem('token');
   if (token) {
     try {
-      const response = await getUserInfo(token);
+      // 不需要传递token参数，getUserInfo会自动从请求拦截器获取
+      const response = await getUserInfo();
       if (response.success) {
         const { username: userUsername, userId: userUserId, userType } = response.data;
         userInfo.value.username = userUsername;
@@ -472,6 +428,9 @@ onMounted(async () => {
   } else {
     logout();
   }
+
+  // 加载收藏数据
+  loadFavorites();
 });
 </script>
 

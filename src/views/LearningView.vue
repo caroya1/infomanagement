@@ -58,6 +58,8 @@ import { learningApi } from '../api/learning.js'
 import { reservationApi } from '../api/common.js'
 
 const router = useRouter()
+
+// 修复数据初始化，确保数组数据的正确处理
 const searchText = ref('')
 const currentUser = 'test_user'
 const originalActivities = ref([])
@@ -66,17 +68,30 @@ const currentPage = ref(1)
 const pageSize = ref(8)
 const totalActivities = ref(0)
 
-// 计算属性：过滤和排序后的活动
+// 修复计算属性，添加防护措施
 const filteredActivities = computed(() => {
+  // 确保activities.value是数组
+  if (!Array.isArray(activities.value)) {
+    console.warn('[Learning View] activities.value不是数组:', typeof activities.value);
+    return [];
+  }
+
   let result = [...activities.value]
   
   // 搜索过滤
   if (searchText.value) {
-    result = result.filter(activity => 
-      activity.title.toLowerCase().includes(searchText.value.toLowerCase()) || 
-      activity.content.toLowerCase().includes(searchText.value.toLowerCase()) || 
-      activity.author.toLowerCase().includes(searchText.value.toLowerCase())
-    )
+    result = result.filter(activity => {
+      // 添加属性存在检查
+      if (!activity) return false;
+      
+      const title = activity.title || '';
+      const content = activity.content || '';
+      const author = activity.author || '';
+      
+      return title.toLowerCase().includes(searchText.value.toLowerCase()) || 
+             content.toLowerCase().includes(searchText.value.toLowerCase()) || 
+             author.toLowerCase().includes(searchText.value.toLowerCase());
+    });
   }
   
   // 分页
@@ -132,15 +147,45 @@ const isReserved = async (activityId) => {
   }
 };
 
-// 初始化加载活动数据
+// 修复数据获取函数，添加更多防护措施
 const fetchActivities = async () => {
   try {
+    console.log('[Learning View] 开始获取活动数据');
     const data = await learningApi.getActivities()
-    originalActivities.value = data
-    activities.value = data
-    totalActivities.value = data.length
+    
+    console.log('[Learning View] 获取到的数据:', {
+      isArray: Array.isArray(data),
+      length: data ? data.length : 0,
+      type: typeof data
+    });
+    
+    // 确保数据是数组
+    if (Array.isArray(data)) {
+      originalActivities.value = data
+      activities.value = data
+      totalActivities.value = data.length
+      console.log('[Learning View] 活动数据设置成功，共', data.length, '条');
+    } else {
+      console.error('[Learning View] 获取的数据不是数组:', data);
+      // 设置为空数组以防止错误
+      originalActivities.value = []
+      activities.value = []
+      totalActivities.value = 0
+      
+      ElMessage({
+        message: '活动数据格式异常，请联系管理员',
+        type: 'error',
+        duration: 3000
+      })
+    }
   } catch (error) {
-    console.error('获取活动列表失败', error)
+    console.error('[Learning View] 获取活动列表异常:', error)
+    
+    // 出错时设置为空数组
+    originalActivities.value = []
+    activities.value = []
+    totalActivities.value = 0
+    
     ElMessage({
       message: '加载活动列表失败，请重试',
       type: 'error',
