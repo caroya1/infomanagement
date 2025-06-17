@@ -1,13 +1,16 @@
 <template>
   <div class="home-container">
+    <!-- 引入导航栏组件 -->
     <Navbar />
     
+    <!-- 轮播图 -->
     <el-carousel height="400px">
       <el-carousel-item v-for="(item, index) in carouselItems" :key="index">
         <img :src="item.imageUrl" alt="轮播图" class="carousel-image" />
       </el-carousel-item>
     </el-carousel>
     
+    <!-- 介绍卡片区域 -->
     <el-row class="intro-section" :gutter="20">
       <el-col :span="8" v-for="(card, index) in introCards" :key="index">
         <el-card :body-style="{ padding: '0px' }">
@@ -23,15 +26,17 @@
 </template>
 
 <script setup>
-import Navbar from '../components/Navbar.vue';
-import { ref } from 'vue'; // 导入 ref
+import Navbar from '../components/common/Navbar.vue';
+import { ref } from 'vue';
 
+// 轮播图数据
 const carouselItems = ref([
   { imageUrl: 'https://picsum.photos/1200/400?random=1' },
   { imageUrl: 'https://picsum.photos/1200/400?random=2' },
   { imageUrl: 'https://picsum.photos/1200/400?random=3' }
 ]);
 
+// 介绍卡片数据
 const introCards = ref([
   { 
     title: '论坛交流', 

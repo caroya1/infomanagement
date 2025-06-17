@@ -60,14 +60,24 @@ export const forumApi = {
     }
   },
 
-  // 创建新帖子
+  // 创建新帖子 - 修复API调用和错误处理
   async createPost(postData) {
     try {
+      console.log('[Forum API] 开始创建帖子:', postData)
       const response = await api.post('/forum/posts', postData);
-      return response.data;
+
+      console.log('[Forum API] 创建帖子响应:', response)
+
+      if (response.success && response.data) {
+        console.log('[Forum API] 帖子创建成功')
+        return response.data;
+      } else {
+        console.error('[Forum API] 帖子创建失败:', response.message)
+        throw new Error(response.message || '发布失败')
+      }
     } catch (error) {
-      console.error('创建帖子失败:', error);
-      throw error;
+      console.error('[Forum API] 创建帖子异常:', error);
+      throw new Error(error.response?.data?.message || error.message || '发布失败，请重试');
     }
   },
 

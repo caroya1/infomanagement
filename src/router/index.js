@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
-import Admin from '../views/Admin.vue';
 import Home from '../views/Home.vue';
-import ForumView from '../views/ForumView.vue';
-import ForumDetail from '../views/ForumDetail.vue';
-import LearningView from '../views/LearningView.vue';
-import LearningDetail from '../views/LearningDetail.vue';
-import MallView from '../views/MallView.vue';
-import ProfileView from '../views/ProfileView.vue';
-// 修复：使用真实的后端API而不是Mock API
+import Admin from '../views/admin/Index.vue';
+import AdminManage from '../views/admin/Manage.vue';
+import AdminAnalysis from '../views/admin/Analysis.vue';
+import AdminUsers from '../views/admin/Users.vue';
+import AdminDashboard from '../views/admin/Dashboard.vue';
+import ForumList from '../views/forum/List.vue';
+import ForumDetail from '../views/forum/Detail.vue';
+import LearningList from '../views/learning/List.vue';
+import LearningDetail from '../views/learning/Detail.vue';
+import MallList from '../views/mall/List.vue';
+import ProfileIndex from '../views/profile/Index.vue';
 import { getUserInfo } from '../api/auth';
 import { ElMessage } from 'element-plus';
 
@@ -30,7 +33,7 @@ const requireAuth = async (to, from, next) => {
 
       if (response.success) {
         // 已登录，检查权限
-        if (to.name === 'Admin' && userInfo.userType !== 'admin') {
+        if (to.matched.some(r => r.name === 'Admin') && userInfo.userType !== 'admin') {
           console.log('[Router Debug] 非管理员访问管理员页面，重定向到用户页面');
           next('/home');
         } else {
@@ -55,63 +58,28 @@ const requireAuth = async (to, from, next) => {
 };
 
 const routes = [
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
+  { path: '/login', name: 'Login', component: Login },
+  { path: '/home', name: 'home', component: Home, beforeEnter: requireAuth },
+  { path: '/', redirect: '/login' },
   {
     path: '/admin',
     name: 'Admin',
     component: Admin,
-    beforeEnter: requireAuth
+    beforeEnter: requireAuth,
+    children: [
+      { path: '', redirect: '/admin/manage' },
+      { path: 'manage', name: 'AdminManage', component: AdminManage },
+      { path: 'analysis', name: 'AdminAnalysis', component: AdminAnalysis },
+      { path: 'users', name: 'AdminUsers', component: AdminUsers },
+      { path: 'dashboard', name: 'AdminDashboard', component: AdminDashboard }
+    ]
   },
-  {
-    path: '/home',
-    name: 'home', // 修复：改为小写，与导航栏一致
-    component: Home,
-    beforeEnter: requireAuth
-  },
-  {
-    path: '/',
-    redirect: '/login'
-  },
-  {
-    path: '/forum',
-    name: 'forum',
-    component: ForumView,
-    beforeEnter: requireAuth // 添加认证守卫
-  },
-  {
-    path: '/forum/detail/:id',
-    name: 'ForumDetail',
-    component: ForumDetail,
-    beforeEnter: requireAuth // 添加认证守卫
-  },
-  {
-    path: '/mall',
-    name: 'mall',
-    component: MallView,
-    beforeEnter: requireAuth // 添加认证守卫
-  },
-  {
-    path: '/learning',
-    name: 'learning',
-    component: LearningView,
-    beforeEnter: requireAuth // 添加认证守卫
-  },
-  {
-    path: '/learning/detail/:id',
-    name: 'LearningDetail',
-    component: LearningDetail,
-    beforeEnter: requireAuth // 添加认证守卫
-  },
-  {
-    path: '/profile',
-    name: 'profile',
-    component: ProfileView,
-    beforeEnter: requireAuth // 添加认证守卫
-  }
+  { path: '/forum', name: 'forum', component: ForumList, beforeEnter: requireAuth },
+  { path: '/forum/detail/:id', name: 'ForumDetail', component: ForumDetail, beforeEnter: requireAuth },
+  { path: '/mall', name: 'mall', component: MallList, beforeEnter: requireAuth },
+  { path: '/learning', name: 'learning', component: LearningList, beforeEnter: requireAuth },
+  { path: '/learning/detail/:id', name: 'LearningDetail', component: LearningDetail, beforeEnter: requireAuth },
+  { path: '/profile', name: 'profile', component: ProfileIndex, beforeEnter: requireAuth }
 ];
 
 const router = createRouter({

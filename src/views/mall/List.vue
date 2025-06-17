@@ -63,124 +63,91 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import Navbar from '../components/Navbar.vue'
+import { ref, computed, onMounted } from 'vue'
+import Navbar from '../../components/common/Navbar.vue'
+import { ElMessage } from 'element-plus'
+import { productApi, cartApi } from '../../api/cart.js'
 
 const searchText = ref('')
 const sortType = ref('default')
 const currentPage = ref(1)
 const pageSize = ref(8)
 
-const products = ref([
-  {
-    id: 1,
-    name: '高级智能手表',
-    description: '具有心率监测、睡眠分析等多种功能的智能手表',
-    price: 1299,
-    originalPrice: 1599,
-    sales: 2345,
-    imageUrl: 'https://picsum.photos/400/400?random=21'
-  },
-  {
-    id: 2,
-    name: '无线蓝牙耳机',
-    description: '主动降噪，高清通话，长时间续航的无线耳机',
-    price: 799,
-    originalPrice: 999,
-    sales: 1876,
-    imageUrl: 'https://picsum.photos/400/400?random=22'
-  },
-  {
-    id: 3,
-    name: '超薄笔记本电脑',
-    description: '14英寸轻薄本，高性能处理器，长续航',
-    price: 5699,
-    originalPrice: 6299,
-    sales: 987,
-    imageUrl: 'https://picsum.photos/400/400?random=23'
-  },
-  {
-    id: 4,
-    name: '4K高清电视',
-    description: '55英寸4K智能电视，HDR，AI语音控制',
-    price: 3499,
-    originalPrice: 3999,
-    sales: 1234,
-    imageUrl: 'https://picsum.photos/400/400?random=24'
-  },
-  {
-    id: 5,
-    name: '机械键盘',
-    description: 'RGB背光，青轴机械键盘，全键无冲',
-    price: 399,
-    originalPrice: 499,
-    sales: 3456,
-    imageUrl: 'https://picsum.photos/400/400?random=25'
-  },
-  {
-    id: 6,
-    name: '游戏鼠标',
-    description: '可编程按键，高精度传感器，RGB灯光',
-    price: 199,
-    originalPrice: 249,
-    sales: 4567,
-    imageUrl: 'https://picsum.photos/400/400?random=26'
-  },
-  {
-    id: 7,
-    name: '便携充电宝',
-    description: '20000mAh大容量，双向快充',
-    price: 149,
-    originalPrice: 199,
-    sales: 5678,
-    imageUrl: 'https://picsum.photos/400/400?random=27'
-  },
-  {
-    id: 8,
-    name: '智能音箱',
-    description: '支持语音助手，智能家居控制',
-    price: 249,
-    originalPrice: 299,
-    sales: 2345,
-    imageUrl: 'https://picsum.photos/400/400?random=28'
-  }
-])
+// 修改为从后端获取数据
+const products = ref([])
+const cart = ref([])
+const loading = ref(false)
 
-// 购物车数据
-const cart = ref([
-  // 示例购物车数据
-  {
-    productId: 1,
-    quantity: 1
+// 获取商品列表
+const fetchProducts = async () => {
+  try {
+    loading.value = true
+    console.log('[Mall View] 开始获取商品列表');
+    const data = await productApi.getProducts()
+    
+    if (Array.isArray(data)) {
+      products.value = data
+      console.log('[Mall View] 商品列表获取成功，共', data.length, '个商品');
+    } else {
+      console.error('[Mall View] 商品数据格式异常:', data);
+      products.value = []
+      ElMessage.error('商品数据格式异常');
+    }
+  } catch (error) {
+    console.error('[Mall View] 获取商品列表失败:', error);
+    ElMessage.error('获取商品列表失败');
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 获取购物车数据
+const fetchCart = async () => {
+  try {
+    console.log('[Mall View] 开始获取购物车');
+    const cartItems = await cartApi.getCart()
+    cart.value = cartItems
+    console.log('[Mall View] 购物车获取成功，共', cartItems.length, '个商品');
+  } catch (error) {
+    console.error('[Mall View] 获取购物车失败:', error);
+    cart.value = []
+  }
+}
 
 // 计算属性：过滤和排序后的商品
 const filteredProducts = computed(() => {
+  if (!Array.isArray(products.value)) {
+    return []
+  }
+
   let result = [...products.value]
   
   // 搜索过滤
   if (searchText.value) {
-    result = result.filter(product => 
-      product.name.toLowerCase().includes(searchText.value.toLowerCase()) || 
-      product.description.toLowerCase().includes(searchText.value.toLowerCase())
-    )
+    result = result.filter(product => {
+      const name = product.name || '';
+      const description = product.description || '';
+      const searchTerm = searchText.value.toLowerCase();
+      
+      return name.toLowerCase().includes(searchTerm) || 
+             description.toLowerCase().includes(searchTerm);
+    })
   }
   
   // 排序
   switch (sortType.value) {
     case 'price-asc':
-      result.sort((a, b) => a.price - b.price)
+      result.sort((a, b) => (a.price || 0) - (b.price || 0))
       break
     case 'price-desc':
-      result.sort((a, b) => b.price - a.price)
+      result.sort((a, b) => (b.price || 0) - (a.price || 0))
       break
     case 'sales':
-      result.sort((a, b) => b.sales - a.sales)
+      result.sort((a, b) => (b.sales || 0) - (a.sales || 0))
       break
     default:
       // 默认排序（按ID降序）
-      result.sort((a, b) => b.id - a.id)
+      result.sort((a, b) => (b.id || 0) - (a.id || 0))
   }
   
   // 分页
@@ -205,26 +172,40 @@ const searchProduct = () => {
 
 // 检查商品是否已在购物车中
 const isProductInCart = (productId) => {
+  if (!Array.isArray(cart.value) || !productId) {
+    return false
+  }
   return cart.value.some(item => item.productId === productId)
 }
 
-// 添加商品到购物车
-const addToCart = (product) => {
-  if (isProductInCart(product.id)) {
-    // 如果商品已在购物车中，可以增加数量
-    const cartItem = cart.value.find(item => item.productId === product.id)
-    cartItem.quantity += 1
-  } else {
-    // 如果商品不在购物车中，添加新项
-    cart.value.push({
-      productId: product.id,
-      quantity: 1
-    })
+// 添加商品到购物车 - 使用真实API
+const addToCart = async (product) => {
+  if (!product || !product.id) {
+    ElMessage.error('商品信息无效');
+    return;
   }
-  
-  // 提示用户
-  alert('商品已添加到购物车！')
+
+  try {
+    console.log('[Mall View] 添加商品到购物车:', product.name);
+    
+    // 调用后端API添加到购物车
+    await cartApi.addToCart(product.id, 1);
+    
+    // 重新获取购物车数据以保持同步
+    await fetchCart();
+    
+    ElMessage.success(`已将 ${product.name} 添加到购物车`);
+  } catch (error) {
+    console.error('[Mall View] 添加到购物车失败:', error);
+    ElMessage.error(error.message || '添加到购物车失败');
+  }
 }
+
+// 组件挂载时获取数据
+onMounted(() => {
+  fetchProducts()
+  fetchCart()
+})
 </script>
 
 <style scoped>

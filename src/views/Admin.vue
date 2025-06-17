@@ -1,119 +1,78 @@
 <template>
-  <div class="admin-container">
-    <el-header>
-      <div class="logo">后台管理系统</div>
-      <div class="user-info">
-        <span>欢迎，管理员</span>
-        <el-button type="text" @click="logout">退出登录</el-button>
-      </div>
-    </el-header>
+  <el-container class="admin-container">
+    <el-aside width="200px" class="admin-aside">
+      <div class="logo">后台管理</div>
+      <el-menu
+        :default-active="activeMenu"
+        class="el-menu-vertical"
+        router
+        @select="handleMenuSelect"
+      >
+        <el-menu-item index="/admin/manage">管理</el-menu-item>
+        <el-menu-item index="/admin/analysis">数据分析</el-menu-item>
+        <el-menu-item index="/admin/users">用户管理</el-menu-item>
+        <el-menu-item index="/admin/dashboard">管理员主页</el-menu-item>
+      </el-menu>
+    </el-aside>
     <el-container>
-      <el-aside width="200px">
-        <el-menu default-active="1" class="el-menu-vertical" router>
-          <el-menu-item index="/admin">
-            <i class="el-icon-s-home"></i>
-            <span>首页</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/users">
-            <i class="el-icon-s-custom"></i>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/settings">
-            <i class="el-icon-s-tools"></i>
-            <span>系统设置</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
+      <el-header class="admin-header">
+        <div>欢迎，管理员</div>
+        <el-button type="text" @click="logout">退出登录</el-button>
+      </el-header>
       <el-main>
-        <el-card shadow="never">
-          <template #header>
-            <div class="clearfix">
-              <span>管理仪表盘</span>
-            </div>
-          </template>
-          <div class="grid-content bg-purple">
-            <el-row :gutter="20">
-              <el-col :span="6">
-                <el-card class="box-card">
-                  <div slot="header" class="clearfix">
-                    <span>用户总数</span>
-                  </div>
-                  <div class="number">1,280</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card class="box-card">
-                  <div slot="header" class="clearfix">
-                    <span>今日新增</span>
-                  </div>
-                  <div class="number">24</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card class="box-card">
-                  <div slot="header" class="clearfix">
-                    <span>今日活跃</span>
-                  </div>
-                  <div class="number">328</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card class="box-card">
-                  <div slot="header" class="clearfix">
-                    <span>在线人数</span>
-                  </div>
-                  <div class="number">86</div>
-                </el-card>
-              </el-col>
-            </el-row>
-          </div>
-        </el-card>
+        <router-view />
       </el-main>
     </el-container>
-  </div>
+  </el-container>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router'
+import { ref, watch } from 'vue'
 
-const router = useRouter();
+const router = useRouter()
+const route = useRoute()
+const activeMenu = ref(route.path)
 
-// 退出登录
+watch(
+  () => route.path,
+  (val) => {
+    activeMenu.value = val
+  }
+)
+
+const handleMenuSelect = (index) => {
+  router.push(index)
+}
+
 const logout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('userType');
-  router.push('/login');
-};
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  router.push('/login')
+}
 </script>
 
 <style scoped>
 .admin-container {
   height: 100vh;
 }
-
-.el-header {
-  background-color: #304156;
+.admin-aside {
+  background: #2d3a4b;
   color: #fff;
-  line-height: 60px;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
 }
-
 .logo {
   font-size: 20px;
   font-weight: bold;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-}
-
-.number {
-  font-size: 28px;
-  font-weight: bold;
   text-align: center;
-  margin: 10px 0;
+  padding: 24px 0;
+  color: #fff;
+}
+.admin-header {
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid #eee;
 }
 </style>

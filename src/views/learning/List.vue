@@ -37,11 +37,11 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import Navbar from '../components/Navbar.vue'
+import Navbar from '../../components/common/Navbar.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { learningApi } from '../api/learning.js'
-import { reservationApi } from '../api/common.js'
+import { learningApi } from '../../api/learning.js'
+import { reservationApi } from '../../api/common.js'
 
 const router = useRouter()
 
